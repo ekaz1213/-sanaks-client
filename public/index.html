@@ -113,5 +113,33 @@
       </div>
     </div>
     <div id="stories-viewer"></div>
+<script>
+    // ВСТАВЬТЕ СЮДА ВАШУ ССЫЛКУ ИЗ RENDER (заменив https:// на wss://)
+    const MY_CLOUD_SERVER = "wss://://onrender.com"; 
+    
+    // Подключаемся к вашему независимому серверу
+    const csanaksSocket = new WebSocket(MY_CLOUD_SERVER);
+    
+    csanaksSocket.onopen = () => {
+        console.log("Csanaks официально подключен к вашему собственному серверу!");
+    };
+
+    // Логика перехвата: когда ваш сервер присылает сообщение, оно отображается в интерфейсе
+    csanaksSocket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        // Функция вызова сообщения на экране (встроена в дизайн Telegram Web)
+        if(window.Config && window.Config.appendMessage) {
+            window.Config.appendMessage(data.text, data.sender);
+        }
+    };
+
+    // Функция отправки (привязываем к кнопке отправки в интерфейсе)
+    function sendPrivateMessage(text) {
+        if (csanaksSocket.readyState === WebSocket.OPEN) {
+            csanaksSocket.send(JSON.stringify({ text: text, sender: "Я главный админ" }));
+        }
+    }
+</script>
+
   </body>
 </html>
