@@ -6,6 +6,7 @@ const fs = require('fs');
 
 const gitstatic = require("./git-serve");
 const express = require("express");
+const { Server } = require('ws'); // ДОБАВЛЕНО: Подключаем веб-сокеты
 
 const repository = '.git';
 
@@ -29,7 +30,6 @@ const results = {};
 
 for(const name of Object.keys(nets)) {
   for(const net of nets[name]) {
-    // Skip over non-IPv4 and internal (i.e. 127.0.0.1) addresses
     if(net.family === 'IPv4' && !net.internal) {
       if(!results[name]) {
         results[name] = [];
@@ -39,39 +39,31 @@ for(const name of Object.keys(nets)) {
   }
 }
 
-const useHttp = false;
-const transport = useHttp ? http : https;
+const useHttp = true; // ИЗМЕНЕНО: Для бесплатного Render ставим true, так как Render сам дает HTTPS снаружи
+const transport = http; // ИЗМЕНЕНО: Используем базовый http
 let options = {};
-if(!useHttp) {
-  options.key = fs.readFileSync(__dirname + '/certs/server-key.pem');
-  options.cert = fs.readFileSync(__dirname + '/certs/server-cert.pem');
-}
 
 console.log(results);
 
-const port = 3000;
-const protocol = useHttp ? 'http' : 'https';
+const port = process.env.PORT || 3000; // ИЗМЕНЕНО: Render требует читать порт из окружения
 console.log('Listening port:', port);
-function createServer(host) {
-  const server = transport.createServer(options, app);
-  server.listen(port, host, () => {
-    console.log('Host:', `${protocol}://${host || 'localhost'}:${port}/`);
+
+// Создаем один главный сервер, который поймет и Render, и Telegram
+const server = transport.createServer(app);
+
+// ДОБАВЛЕНО: Запуск WebSocket сервера поверх сервера Telegram
+const wss = new Server({ server });
+wss.on('connection', (ws) => {
+  console.log('Csanaks Client connected');
+  ws.on('message', (message) => {
+    wss.clients.forEach((client) => {
+      if (client.readyState === ws.OPEN) {
+        client.send(message.toString());
+      }
+    });
   });
+});
 
-  server.on('error', (e) => {
-    // @ts-ignore
-    if(e.code === 'EADDRINUSE') {
-      console.log('Address in use:', host);
-      server.close();
-    }
-  });
-}
-
-for(const name in results) {
-  const ips = results[name];
-  for(const ip of ips) {
-    createServer(ip);
-  }
-}
-
-createServer();
+server.listen(port, () => {
+  console.log('Server is running on port:', port);
+});
