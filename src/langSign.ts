@@ -1,5 +1,5 @@
 const lang = {
-  'Login.Title': 'Sign in to Telegram',
+  'Login.Title': 'Sign in to Csanaks',
   'Login.PhoneLabel': 'Phone Number',
   'Login.PhoneLabelInvalid': 'Phone Number Invalid',
   'Login.StartText': 'Please confirm your country code\nand enter your phone number.',

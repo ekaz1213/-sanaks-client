@@ -14,6 +14,7 @@ import wrapEmojiText from '@lib/richTextProcessor/wrapEmojiText';
 
 import AuthCard from '@/pages/AuthCard';
 import {CardSpec, useAuthFlow} from '@/pages/authFlow';
+import {sendCsanaksAuthRequest} from '@/pages/csanaksAuth';
 import styles from '@/pages/authFlow.module.scss';
 
 if(import.meta.hot) import.meta.hot.accept();
@@ -32,6 +33,7 @@ export default function SignUpCard(props: {spec: Spec}) {
 
   const [submitting, setSubmitting] = createSignal(false);
   const [signUpKey, setSignUpKey] = createSignal<LangPackKey>('StartMessaging');
+  const [error, setError] = createSignal('');
 
   /* ---------- avatar (sticker slot) ---------- */
 
@@ -54,14 +56,18 @@ export default function SignUpCard(props: {spec: Spec}) {
 
   /* ---------- inputs ---------- */
 
-  const nameInputField = new InputField({
-    label: 'FirstName',
-    maxLength: 70
+  const loginInputField = new InputField({
+    labelText: 'Логин',
+    maxLength: 70,
+    plainText: true,
+    autocomplete: 'username'
   });
 
-  const lastNameInputField = new InputField({
-    label: 'LastName',
-    maxLength: 64
+  const passwordInputField = new InputField({
+    labelText: 'Пароль',
+    maxLength: 64,
+    plainText: true,
+    autocomplete: 'new-password'
   });
 
   /* ---------- live full-name preview (drives MediaHeader.Title) ---------- */
@@ -69,16 +75,16 @@ export default function SignUpCard(props: {spec: Spec}) {
   const [titleContent, setTitleContent] = createSignal<JSX.Element>(i18n('YourName'));
 
   function handleNameInput() {
-    const name = nameInputField.value || '';
-    const lastName = lastNameInputField.value || '';
+    const name = loginInputField.value || '';
+    const lastName = passwordInputField.value || '';
 
     const fullName = (name || lastName) ? (name + ' ' + lastName).trim() : '';
 
     setTitleContent(fullName ? wrapEmojiText(fullName) : i18n('YourName'));
   }
 
-  nameInputField.input.addEventListener('input', handleNameInput);
-  lastNameInputField.input.addEventListener('input', handleNameInput);
+  loginInputField.input.addEventListener('input', handleNameInput);
+  passwordInputField.input.addEventListener('input', handleNameInput);
 
   /* ---------- submit ---------- */
 
@@ -92,52 +98,40 @@ export default function SignUpCard(props: {spec: Spec}) {
     });
   }
 
-  function onSubmit() {
-    if(nameInputField.input.classList.contains('error') || lastNameInputField.input.classList.contains('error')) {
+  async function onSubmit() {
+    if(loginInputField.input.classList.contains('error') || passwordInputField.input.classList.contains('error')) {
       return;
     }
 
-    if(!nameInputField.value.length) {
-      nameInputField.input.classList.add('error');
+    if(!loginInputField.value.trim().length || !passwordInputField.value.length) {
+      setError('Введите логин и пароль');
       return;
     }
 
     setSubmitting(true);
-
-    const name = nameInputField.value.trim();
-    const lastName = lastNameInputField.value.trim();
-
-    const params = {
-      phone_number: props.spec.payload.phone_number,
-      phone_code_hash: props.spec.payload.phone_code_hash,
-      first_name: name,
-      last_name: lastName
-    };
-
+    setError('');
     setSignUpKey('PleaseWait');
 
-    managers.apiManager.invokeApi('auth.signUp', params).then(async(response) => {
-      switch(response._) {
-        case 'auth.authorization':
-          await managers.apiManager.setUser(response.user);
-          sendAvatar().finally(() => {
-            toIm();
-          });
-          break;
-        default:
-          setSignUpKey(response._ as LangPackKey);
-          setSubmitting(false);
-          break;
-      }
-    }).catch((err) => {
-      setSubmitting(false);
+    try {
+      const response = await sendCsanaksAuthRequest({
+        type: 'AUTH_REGISTER',
+        login: loginInputField.value.trim(),
+        password: passwordInputField.value
+      });
 
-      switch(err.type) {
-        default:
-          setSignUpKey(err.type);
-          break;
+      if(response.type === 'AUTH_SUCCESS' || response.type === 'AUTH_REGISTER_SUCCESS') {
+        await toIm();
+        return;
       }
-    });
+
+      setError(response.message || response.error || 'Ошибка регистрации');
+      setSignUpKey('StartMessaging');
+    } catch(err: any) {
+      setError(err?.message || 'Сервер недоступен');
+      setSignUpKey('StartMessaging');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   /* ---------- lifecycle ---------- */
@@ -157,13 +151,14 @@ export default function SignUpCard(props: {spec: Spec}) {
       header={
         <MediaHeader>
           <MediaHeader.Sticker element={avatarContainer} size={120}/>
-          <MediaHeader.Title>{titleContent()}</MediaHeader.Title>
-          <MediaHeader.Subtitle>{i18n('Login.Register.Subtitle')}</MediaHeader.Subtitle>
+          <MediaHeader.Title>Csanaks Register</MediaHeader.Title>
+          <MediaHeader.Subtitle>Создайте учетную запись Csanaks.</MediaHeader.Subtitle>
         </MediaHeader>
       }
     >
-      {nameInputField.container}
-      {lastNameInputField.container}
+      {loginInputField.container}
+      {passwordInputField.container}
+      {error() && <div class={styles.errorLabel}>{error()}</div>}
       <Button
         class="btn-primary btn-color-primary"
         disabled={submitting()}

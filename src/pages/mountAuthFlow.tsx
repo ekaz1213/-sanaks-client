@@ -70,17 +70,12 @@ export function disposeActiveAuthFlow(): void {
 function authStateToCardSpec(authState: MountAuthFlowState): CardSpec {
   switch(authState._) {
     case 'authStateSignIn':
-      return {name: 'signIn'};
     case 'authStateSignQr':
-      return {name: 'signQR'};
     case 'authStateAuthCode':
-      return {name: 'authCode', payload: authState.sentCode};
     case 'authStatePassword':
-      return {name: 'password'};
     case 'authStateSignUp':
-      return {name: 'signUp', payload: authState.authCode};
     case 'authStateSignImport':
-      return {name: 'signImport', payload: authState.data};
+      return {name: 'signIn'};
     default: {
       const exhaustive: never = authState;
       throw new Error(`Unknown auth state: ${JSON.stringify(exhaustive)}`);
