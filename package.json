@@ -1,7 +1,7 @@
 {
-  "name": "csanaks-server",
+  "name": "csanaks",
   "version": "1.0.0",
-  "description": "Csanaks Messenger Hybrid Server",
+  "description": "Csanaks Messenger",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
