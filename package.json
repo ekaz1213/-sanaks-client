@@ -4,7 +4,9 @@
   "description": "Csanaks Messenger",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "vite build",
+    "dev": "vite"
   },
   "dependencies": {
     "@cryptography/aes": "^0.1.1",
