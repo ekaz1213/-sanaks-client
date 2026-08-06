@@ -2,8 +2,8 @@ import { defineConfig } from 'vite';
 import solidPlugin from 'vite-plugin-solid';
 
 export default defineConfig({
-  // Указываем Vite правильно собирать пути для папки вашего репозитория
-  base: './', 
+  // Принудительно привязываем сборку к вашей подпапке на GitHub Pages
+  base: '/-sanaks-client/', 
   
   plugins: [
     solidPlugin()
