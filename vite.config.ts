@@ -95,6 +95,9 @@ if(USE_OWN_SOLID) {
 
 export default defineConfig({
   base: '/-sanaks-client/',
+  worker: {
+    format: 'es'
+  },
   plugins: [
     process.env.VITEST || process.env.TWEB_PREVIEW ? undefined : devChecks(rootDir),
     solidPlugin(),
@@ -128,7 +131,14 @@ export default defineConfig({
     target: 'esnext',
     outDir: 'dist',
     assetsDir: 'assets',
-    minify: 'terser'
+    minify: 'terser',
+    rollupOptions: {
+      output: {
+        format: 'es',
+        entryFileNames: '[name].js',
+        chunkFileNames: '[name]-[hash].js'
+      }
+    }
   },
   css: {
     devSourcemap: true,
